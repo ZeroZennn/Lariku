@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "453564794426",
+    "project_id": "lariku-b5bb4",
+    "storage_bucket": "lariku-b5bb4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:453564794426:android:62d4521392bdce8fe45703",
+        "android_client_info": {
+          "package_name": "com.example.lariku"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "453564794426-6nc4hpt22eiqtrmalbggo05iir7t4m4q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lariku",
+            "certificate_hash": "bbd0421ad4dbc0ab6a414c8d41b9d156384febd7"
+          }
+        },
+        {
+          "client_id": "453564794426-3d082742s2ss3tcvh77lc314vvp5mc2k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXNPgkh15ZHT7Lz7eRAYV2wgHYFTI8180"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "453564794426-3d082742s2ss3tcvh77lc314vvp5mc2k.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "453564794426-queph4ag8ii9bpsiipbbe59cpqr6akd1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.lariku"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
