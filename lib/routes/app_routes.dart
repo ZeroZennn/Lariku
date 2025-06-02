@@ -6,6 +6,7 @@ import '../screens/auth/register_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/ranking/ranking_screen.dart';
 import '../screens/run_tracker/run_screen.dart';
+import '../screens/run_tracker/run_summary_screen.dart';
 import '../screens/friendship/friends_screen.dart';
 import '../screens/activities/activities_screen.dart';
 import '../screens/profile/profile_screen.dart';

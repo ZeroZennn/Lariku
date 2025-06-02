@@ -5,6 +5,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/activity_model.dart';
+import '../run_tracker/run_summary_screen.dart'; // PASTIKAN import ini ada!
 
 class RunScreen extends StatefulWidget {
   static const String routeName = '/run';
@@ -79,33 +81,31 @@ class _RunScreenState extends State<RunScreen> {
     _positionStream?.pause();
   }
 
-  void _stopRun() async {
+  void _stopRun() {
     _timer?.cancel();
     _positionStream?.cancel();
 
     if (_startTime == null || _positions.length < 2) return;
 
-    final runData = {
-      'date': Timestamp.now(),
-      'startTime': Timestamp.fromDate(_startTime!),
-      'duration': _seconds,
-      'distance': double.parse(_totalDistance.toStringAsFixed(2)),
-      'pace': _seconds / _totalDistance, // seconds per km
-      'coordinates':
+    final activity = RunActivity(
+      date: DateTime.now(),
+      startTime: _startTime!,
+      duration: _seconds,
+      distance: double.parse(_totalDistance.toStringAsFixed(2)),
+      pace: _seconds / _totalDistance,
+      coordinates:
           _positions
               .map((e) => {'lat': e.latitude, 'lng': e.longitude})
               .toList(),
-    };
+    );
 
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId != null) {
-      await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(userId)
-          .collection('runs')
-          .add(runData);
-    }
+    Navigator.pushReplacementNamed(
+      context,
+      RunSummaryScreen.routeName,
+      arguments: activity,
+    );
 
+    // reset state
     setState(() {
       _isRunning = false;
       _seconds = 0;
@@ -113,12 +113,6 @@ class _RunScreenState extends State<RunScreen> {
       _positions.clear();
       _startTime = null;
     });
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Run saved successfully!")));
-    }
   }
 
   Future<bool> _checkLocationPermission() async {

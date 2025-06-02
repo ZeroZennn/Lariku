@@ -1,27 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/activity_model.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> saveRunData({
-    required String userId,
-    required DateTime startTime,
-    required Duration duration,
-    required double distance,
-    required List<Map<String, double>> coordinates,
-  }) async {
-    final runData = {
-      'date': Timestamp.now(),
-      'startTime': Timestamp.fromDate(startTime),
-      'duration': duration.inSeconds,
-      'distance': distance,
-      'coordinates': coordinates,
-    };
-
-    await _db
-        .collection('activities')
-        .doc(userId)
-        .collection('runs')
-        .add(runData);
+  Future<void> saveActivity(RunActivity activity, String userId) async {
+    try {
+      await _firestore
+          .collection('activities')
+          .doc(userId)
+          .collection('runs')
+          .add(activity.toMap());
+    } catch (e) {
+      throw Exception('Gagal menyimpan aktivitas: $e');
+    }
   }
 }
