@@ -16,7 +16,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
+  // Gunakan getter agar context bisa dipakai di dalam tombol!
+  List<Widget> get _pages => [
     // --- INI HALAMAN HOME BARU SESUAI DESAIN GAMBAR ---
     ListView(
       padding: EdgeInsets.zero,
@@ -132,13 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: const Color(0xFFD7D7D7),
                 padding: const EdgeInsets.symmetric(vertical: 34),
                 alignment: Alignment.center,
-                child: Icon(
-                  Icons.map_outlined,
-                  size: 74, // pakai AssetImage kalau ada SVG/PNG custom, kalau belum pakai Icon bawaan
-                  color: Colors.black,
-                ),
-                // Jika tidak punya gambar map, pakai:
-                // child: Icon(Icons.map_outlined, size: 74, color: Colors.black87),
+                child: Icon(Icons.map_outlined, size: 74, color: Colors.black),
               ),
             ],
           ),
@@ -151,7 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
           alignment: Alignment.centerLeft,
           child: ElevatedButton(
             onPressed: () {
-              // Navigasi ke run screen jika perlu
+              setState(() {
+                _currentIndex = 2; // index 2 adalah "Run"
+              });
             },
             style: ElevatedButton.styleFrom(
               elevation: 0,
@@ -203,14 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      // Pakai asset lari jika ada, kalau tidak ganti dengan Icon default
-                      Icon(
-                        Icons.directions_run, // kalau belum ada ganti dengan Icon bawaan
-                        size: 36,
-                        color: Colors.white,
-                      ),
-                      // Jika tidak ada asset gambar, gunakan:
-                      // Icon(Icons.directions_run, color: Colors.white, size: 34),
+                      Icon(Icons.directions_run, size: 36, color: Colors.white),
                       const SizedBox(width: 13),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
