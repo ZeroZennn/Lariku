@@ -4,6 +4,11 @@ import '../friendship/friends_screen.dart';
 import '../ranking/ranking_screen.dart';
 import '../run_tracker/run_screen.dart';
 
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 class HomeScreen extends StatefulWidget {
   static const String routeName = '/home';
 
@@ -52,92 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
 
         // 2. Personal Best (atas abu, bawah peta)
-        Container(
-          color: const Color(0xFF686868),
-          width: double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 24,
-                  right: 24,
-                  top: 18,
-                  bottom: 10,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Your Personal Best",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              "Jarak",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              "5.2 Km",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 36),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              "Pace",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              "5:43 /Km",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Map icon section (background abu muda)
-              Container(
-                width: double.infinity,
-                color: const Color(0xFFD7D7D7),
-                padding: const EdgeInsets.symmetric(vertical: 34),
-                alignment: Alignment.center,
-                child: Icon(Icons.map_outlined, size: 74, color: Colors.black),
-              ),
-            ],
-          ),
-        ),
+        const PersonalBestCard(),
 
         // 3. Tombol Mulai Lari
         Container(
@@ -312,6 +232,256 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class PersonalBestCard extends StatefulWidget {
+  const PersonalBestCard({Key? key}) : super(key: key);
+
+  @override
+  State<PersonalBestCard> createState() => _PersonalBestCardState();
+}
+
+class _PersonalBestCardState extends State<PersonalBestCard> {
+  final Completer<GoogleMapController> _mapController = Completer();
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return Container(
+        color: const Color(0xFF686868),
+        padding: const EdgeInsets.all(24),
+        child: const Text(
+          "Login untuk melihat personal best.",
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
+      );
+    }
+    final userId = currentUser.uid;
+
+    return FutureBuilder<QuerySnapshot>(
+      future:
+          FirebaseFirestore.instance
+              .collection('activities')
+              .doc(userId)
+              .collection('runs')
+              .orderBy('distance', descending: true)
+              .limit(1)
+              .get(),
+      builder: (context, snapshot) {
+        String distanceText = '--';
+        String paceText = '--:-- /km';
+        List<LatLng> routeCoordinates = [];
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            color: const Color(0xFF686868),
+            padding: const EdgeInsets.symmetric(vertical: 30),
+            alignment: Alignment.center,
+            child: const CircularProgressIndicator(color: Colors.white),
+          );
+        }
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+          final double distance = (data['distance'] as num?)?.toDouble() ?? 0.0;
+          final int duration = (data['duration'] as num?)?.toInt() ?? 0;
+          distanceText = "${distance.toStringAsFixed(2)} Km";
+          paceText = _formatPace(distance, duration);
+
+          // Ambil koordinat jika ada
+          if (data['coordinates'] != null && data['coordinates'] is List) {
+            final coordsList = data['coordinates'] as List<dynamic>;
+            for (var coord in coordsList) {
+              if (coord is Map) {
+                final lat = (coord['lat'] as num?)?.toDouble();
+                final lng = (coord['lng'] as num?)?.toDouble();
+                if (lat != null && lng != null) {
+                  routeCoordinates.add(LatLng(lat, lng));
+                }
+              }
+            }
+          }
+        }
+        return Container(
+          color: const Color(0xFF686868),
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 18,
+                  bottom: 10,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Your Personal Best",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Jarak",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              distanceText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 36),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Pace",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              paceText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Map polyline section (atau icon jika tidak ada data)
+              Container(
+                width: double.infinity,
+                height: 240,
+                color: const Color(0xFFD7D7D7),
+                alignment: Alignment.center,
+                child:
+                    routeCoordinates.length >= 2
+                        ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: routeCoordinates[0],
+                              zoom: 16,
+                            ),
+                            polylines: {
+                              Polyline(
+                                polylineId: const PolylineId('best_run'),
+                                color: Colors.blue,
+                                width: 4,
+                                points: routeCoordinates,
+                              ),
+                            },
+                            markers: {
+                              Marker(
+                                markerId: const MarkerId('start'),
+                                position: routeCoordinates.first,
+                                icon: BitmapDescriptor.defaultMarkerWithHue(
+                                  BitmapDescriptor.hueGreen,
+                                ),
+                                infoWindow: const InfoWindow(title: 'Mulai'),
+                              ),
+                              Marker(
+                                markerId: const MarkerId('end'),
+                                position: routeCoordinates.last,
+                                infoWindow: const InfoWindow(title: 'Selesai'),
+                              ),
+                            },
+                            zoomControlsEnabled: false,
+                            myLocationButtonEnabled: false,
+                            scrollGesturesEnabled: false,
+                            tiltGesturesEnabled: false,
+                            rotateGesturesEnabled: false,
+                            zoomGesturesEnabled: false,
+                            liteModeEnabled: true, // Lebih ringan
+                            onMapCreated: (controller) async {
+                              _mapController.complete(controller);
+                              // Zoom agar semua jalur terlihat:
+                              if (routeCoordinates.length >= 2) {
+                                LatLngBounds bounds = _boundsFromLatLngList(
+                                  routeCoordinates,
+                                );
+                                await Future.delayed(
+                                  const Duration(milliseconds: 300),
+                                ); // tunggu sedikit
+                                controller.animateCamera(
+                                  CameraUpdate.newLatLngBounds(bounds, 24),
+                                );
+                              }
+                            },
+                          ),
+                        )
+                        : Icon(
+                          Icons.map_outlined,
+                          size: 74,
+                          color: Colors.black,
+                        ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatPace(double distanceKm, int durationSeconds) {
+    if (distanceKm <= 0 || durationSeconds <= 0) return '--:-- /km';
+    final double totalSecondsPerKm = durationSeconds / distanceKm;
+    if (totalSecondsPerKm.isInfinite ||
+        totalSecondsPerKm.isNaN ||
+        totalSecondsPerKm < 0) {
+      return '--:-- /km';
+    }
+    final int minutesPerKm = totalSecondsPerKm ~/ 60;
+    final int secondsRemainderPerKm = (totalSecondsPerKm % 60).round();
+    return "$minutesPerKm:${secondsRemainderPerKm.toString().padLeft(2, '0')} /km";
+  }
+
+  LatLngBounds _boundsFromLatLngList(List<LatLng> list) {
+    double? x0, x1, y0, y1;
+    for (LatLng latLng in list) {
+      if (x0 == null) {
+        x0 = x1 = latLng.latitude;
+        y0 = y1 = latLng.longitude;
+      } else {
+        if (latLng.latitude > x1!) x1 = latLng.latitude;
+        if (latLng.latitude < x0) x0 = latLng.latitude;
+        if (latLng.longitude > y1!) y1 = latLng.longitude;
+        if (latLng.longitude < y0!) y0 = latLng.longitude;
+      }
+    }
+    return LatLngBounds(
+      northeast: LatLng(x1!, y1!),
+      southwest: LatLng(x0!, y0!),
     );
   }
 }
