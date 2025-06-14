@@ -27,39 +27,64 @@ class _HomeScreenState extends State<HomeScreen> {
     ListView(
       padding: EdgeInsets.zero,
       children: [
-        // 1. Salam & Foto Profil
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 38,
-            bottom: 14,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Halo, Arya!",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF3D3D3D),
-                ),
+        // 1. Salam & Foto Profil DINAMIS
+        FutureBuilder<DocumentSnapshot>(
+          future:
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser?.uid)
+                  .get(),
+          builder: (context, snapshot) {
+            String nama = 'Runner!';
+            String? photoURL;
+            if (snapshot.hasData && snapshot.data!.exists) {
+              final data = snapshot.data!.data() as Map<String, dynamic>;
+              nama = data['displayName'] ?? nama;
+              photoURL = data['photoURL'];
+            }
+            return Container(
+              color: Colors.white,
+              padding: const EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 38,
+                bottom: 14,
               ),
-              // Profile pic placeholder
-              CircleAvatar(
-                backgroundColor: const Color(0xFFD7D7D7),
-                radius: 26,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Halo, $nama!",
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF3D3D3D),
+                    ),
+                  ),
+                  photoURL != null && photoURL.isNotEmpty
+                      ? CircleAvatar(
+                        backgroundImage: NetworkImage(photoURL),
+                        radius: 26,
+                      )
+                      : CircleAvatar(
+                        backgroundColor: const Color(0xFFD7D7D7),
+                        radius: 26,
+                        child: const Icon(
+                          Icons.person,
+                          size: 30,
+                          color: Colors.grey,
+                        ),
+                      ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
 
-        // 2. Personal Best (atas abu, bawah peta)
+        // 2. Personal Best (tetap sama, sudah dinamis)
         const PersonalBestCard(),
 
-        // 3. Tombol Mulai Lari
+        // 3. Tombol Mulai Lari (tidak perlu diubah)
         Container(
           color: Colors.white,
           padding: const EdgeInsets.only(left: 24, top: 36, bottom: 28),
@@ -93,80 +118,100 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // 4. Suggested Goal
-        Container(
-          color: const Color(0xFF686868),
-          width: double.infinity,
-          padding: const EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 14,
-            bottom: 20,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Suggested Goal",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                ),
+        // 4. Suggested Goal DINAMIS
+        FutureBuilder<QuerySnapshot?>(
+          future: _fetchWeeklyRuns(),
+          builder: (context, snapshot) {
+            double goalDistance = 5.0;
+            double totalDistance = 0.0;
+            final data = snapshot.data;
+            if (data != null) {
+              for (var doc in data.docs) {
+                final run = doc.data() as Map<String, dynamic>;
+                totalDistance += (run['distance'] as num?)?.toDouble() ?? 0.0;
+              }
+            }
+            return Container(
+              color: const Color(0xFF686868),
+              width: double.infinity,
+              padding: const EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 14,
+                bottom: 20,
               ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    "Suggested Goal",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.directions_run, size: 36, color: Colors.white),
-                      const SizedBox(width: 13),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "5 Km per week",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.directions_run,
+                            size: 36,
+                            color: Colors.white,
                           ),
-                          SizedBox(height: 1),
-                          Text(
-                            "2 Km / 5Km run",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
+                          const SizedBox(width: 13),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "$goalDistance Km per week",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                "${totalDistance.toStringAsFixed(2)} Km / $goalDistance Km run",
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: const Color(0xFFD7D7D7),
+                          foregroundColor: Colors.black87,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        child: const Text("Set Goal"),
+                      ),
                     ],
-                  ),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      backgroundColor: const Color(0xFFD7D7D7),
-                      foregroundColor: Colors.black87,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      textStyle: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    child: const Text("Set Goal"),
                   ),
                 ],
               ),
-            ],
-          ),
+            );
+          },
         ),
         const SizedBox(height: 16),
       ],
@@ -484,4 +529,21 @@ class _PersonalBestCardState extends State<PersonalBestCard> {
       southwest: LatLng(x0!, y0!),
     );
   }
+}
+
+Future<QuerySnapshot?> _fetchWeeklyRuns() {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return Future.value(null);
+  final uid = user.uid;
+  final now = DateTime.now();
+  final monday = now.subtract(Duration(days: now.weekday - 1));
+  final weekStart = DateTime(monday.year, monday.month, monday.day);
+  final weekEnd = weekStart.add(const Duration(days: 7));
+  return FirebaseFirestore.instance
+      .collection('activities')
+      .doc(uid)
+      .collection('runs')
+      .where('date', isGreaterThanOrEqualTo: weekStart)
+      .where('date', isLessThan: weekEnd)
+      .get();
 }
