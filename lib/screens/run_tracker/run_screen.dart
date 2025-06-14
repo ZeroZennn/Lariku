@@ -2,9 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/activity_model.dart';
 import '../run_tracker/run_summary_screen.dart'; // PASTIKAN import ini ada!
 
@@ -56,7 +53,10 @@ class _RunScreenState extends State<RunScreen> {
     });
 
     _positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 1, // Merekam lokasi setiap pergerakan 1 meter
+      ),
     ).listen((position) {
       final newPosition = LatLng(position.latitude, position.longitude);
       if (_positions.isNotEmpty) {
