@@ -25,24 +25,21 @@ class ActivitiesScreen extends StatelessWidget {
 
     final String currentUserId = currentUser.uid;
 
-    return Column(
-      children: [
-        // Bagian Header - Salam dan Foto Profil Dinamis
-        FutureBuilder<DocumentSnapshot>(
-          future:
-              FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(currentUserId)
-                  .get(),
-          builder: (context, snapshot) {
-            String nama = 'Runner!';
-            String? photoURL;
-            if (snapshot.hasData && snapshot.data!.exists) {
-              final data = snapshot.data!.data() as Map<String, dynamic>;
-              photoURL = data['photoURL'];
-            }
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(currentUserId).get(),
+      builder: (context, userSnapshot) {
+        String displayName = 'Runner!';
+        String? photoURL;
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          final data = userSnapshot.data!.data() as Map<String, dynamic>;
+          displayName = data['displayName'] ?? displayName;
+          photoURL = data['photoURL'];
+        }
 
-            return Container(
+        return Column(
+          children: [
+            // Header
+            Container(
               color: Colors.white,
               padding: const EdgeInsets.only(
                 left: 24,
@@ -53,7 +50,6 @@ class ActivitiesScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Teks salam
                   Text(
                     "My Activities",
                     style: const TextStyle(
@@ -62,124 +58,118 @@ class ActivitiesScreen extends StatelessWidget {
                       color: Color(0xFF414141),
                     ),
                   ),
-
-                  // Avatar pengguna
                   photoURL != null && photoURL.isNotEmpty
                       ? GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/profile');
-                        },
-                        child: CircleAvatar(
-                          backgroundImage: NetworkImage(photoURL),
-                          radius: 26,
-                        ),
-                      )
+                          onTap: () {
+                            Navigator.pushNamed(context, '/profile');
+                          },
+                          child: CircleAvatar(
+                            backgroundImage: NetworkImage(photoURL),
+                            radius: 26,
+                          ),
+                        )
                       : GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/profile');
-                        },
-                        child: CircleAvatar(
-                          backgroundColor: const Color(0xFFD7D7D7),
-                          radius: 26,
-                          child: const Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Colors.grey,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/profile');
+                          },
+                          child: CircleAvatar(
+                            backgroundColor: const Color(0xFFD7D7D7),
+                            radius: 26,
+                            child: const Icon(
+                              Icons.person,
+                              size: 30,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
-                      ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
 
-        // Expanded untuk isi ListView aktivitas
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream:
-                FirebaseFirestore.instance
+            // Expanded list aktivitas
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
                     .collection('activities')
                     .doc(currentUserId)
                     .collection('runs')
                     .orderBy('startTime', descending: true)
                     .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    'Terjadi kesalahan saat memuat data.\nError: ${snapshot.error}',
-                    textAlign: TextAlign.center,
-                  ),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'Belum ada aktivitas lari yang tersimpan.',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                );
-              }
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Terjadi kesalahan saat memuat data.\nError: ${snapshot.error}',
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'Belum ada aktivitas lari yang tersimpan.',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    );
+                  }
 
-              final activities = snapshot.data!.docs;
+                  final activities = snapshot.data!.docs;
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32.0,
-                  vertical: 30.0,
-                ),
-                itemCount: activities.length,
-                itemBuilder: (context, index) {
-                  final activityDoc = activities[index];
-                  final activityData =
-                      activityDoc.data() as Map<String, dynamic>? ?? {};
-
-                  final String userName =
-                      activityData['userName'] as String? ?? 'Pengguna';
-                  final String runTitle =
-                      activityData['runTitle'] as String? ?? 'Aktivitas Lari';
-                  final Timestamp? activityTimestamp =
-                      activityData['startTime'] as Timestamp?;
-                  final Timestamp validTimestamp =
-                      activityTimestamp ??
-                      (activityData['date'] as Timestamp? ?? Timestamp.now());
-                  final double distanceKm =
-                      (activityData['distance'] as num?)?.toDouble() ?? 0.0;
-                  final int durationSeconds =
-                      (activityData['duration'] as num?)?.toInt() ?? 0;
-
-                  return SlideInUp(
-                    duration: const Duration(milliseconds: 500),
-                    delay: Duration(milliseconds: 120 * index),
-                    child: _ActivityItemCard(
-                      runId: activityDoc.id,
-                      userId: currentUser.uid,
-                      userName: userName,
-                      runTitle: runTitle,
-                      timestamp: validTimestamp,
-                      distanceKm: distanceKm,
-                      durationSeconds: durationSeconds,
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32.0,
+                      vertical: 30.0,
                     ),
+                    itemCount: activities.length,
+                    itemBuilder: (context, index) {
+                      final activityDoc = activities[index];
+                      final activityData = activityDoc.data() as Map<String, dynamic>? ?? {};
+
+                      final String runTitle =
+                          activityData['runTitle'] as String? ?? 'Aktivitas Lari';
+                      final Timestamp? activityTimestamp =
+                          activityData['startTime'] as Timestamp?;
+                      final Timestamp validTimestamp =
+                          activityTimestamp ??
+                          (activityData['date'] as Timestamp? ?? Timestamp.now());
+                      final double distanceKm =
+                          (activityData['distance'] as num?)?.toDouble() ?? 0.0;
+                      final int durationSeconds =
+                          (activityData['duration'] as num?)?.toInt() ?? 0;
+
+                      return SlideInUp(
+                        duration: const Duration(milliseconds: 500),
+                        delay: Duration(milliseconds: 120 * index),
+                        child: _ActivityItemCard(
+                          runId: activityDoc.id,
+                          userId: currentUserId,
+                          displayName: displayName, // PAKAI DARI USERS SAJA
+                          runTitle: runTitle,
+                          timestamp: validTimestamp,
+                          distanceKm: distanceKm,
+                          durationSeconds: durationSeconds,
+                        ),
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-// Komponen kartu aktivitas (Activity Card)
+// Komponen kartu aktivitas
 class _ActivityItemCard extends StatelessWidget {
   final String runId;
   final String userId;
-  final String userName;
+  final String displayName;
   final String runTitle;
   final Timestamp timestamp;
   final double distanceKm;
@@ -189,20 +179,17 @@ class _ActivityItemCard extends StatelessWidget {
     super.key,
     required this.runId,
     required this.userId,
-    required this.userName,
+    required this.displayName,
     required this.runTitle,
     required this.timestamp,
     required this.distanceKm,
     required this.durationSeconds,
   });
 
-  // Format tanggal
+  // Format tanggal Indonesia
   String _formatDateTime(Timestamp ts) {
     try {
-      return DateFormat(
-        'EEEE, d MMMM yyyy, HH:mm:ss',
-        'id_ID',
-      ).format(ts.toDate());
+      return DateFormat('EEEE, d MMMM yyyy, HH:mm:ss', 'id_ID').format(ts.toDate());
     } catch (e) {
       return 'Tanggal tidak valid';
     }
@@ -239,15 +226,12 @@ class _ActivityItemCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) =>
-                    DetailActivitiesScreen(runId: runId, userId: userId),
+            builder: (context) =>
+                DetailActivitiesScreen(runId: runId, userId: userId),
           ),
         );
       },
-
       child: Card(
-        // Warna background kartu diubah menjadi light blue
         color: Colors.lightBlue.shade200,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
@@ -258,14 +242,14 @@ class _ActivityItemCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Bagian atas kartu: avatar dan nama
+              // Header kartu
               Row(
                 children: [
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: Colors.blue[400],
                     child: Text(
-                      userName.isNotEmpty ? userName[0].toUpperCase() : 'P',
+                      displayName.isNotEmpty ? displayName[0].toUpperCase() : 'P',
                       style: const TextStyle(
                         fontSize: 20,
                         color: Colors.white,
@@ -279,7 +263,7 @@ class _ActivityItemCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          userName,
+                          displayName,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -290,7 +274,7 @@ class _ActivityItemCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           _formatDateTime(timestamp),
-                          style: TextStyle(color: Colors.white, fontSize: 13),
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
                         ),
                       ],
                     ),
@@ -298,7 +282,6 @@ class _ActivityItemCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14.0),
-
               // Judul aktivitas
               Text(
                 runTitle,
@@ -311,8 +294,7 @@ class _ActivityItemCard extends StatelessWidget {
                 maxLines: 2,
               ),
               const SizedBox(height: 18.0),
-
-              // Statistik jarak, pace, dan durasi
+              // Statistik
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -332,7 +314,7 @@ class _ActivityItemCard extends StatelessWidget {
   }
 }
 
-// Widget kecil untuk menampilkan label dan value statistik
+// Widget kecil label dan value statistik
 class _StatItem extends StatelessWidget {
   final String label;
   final String value;
