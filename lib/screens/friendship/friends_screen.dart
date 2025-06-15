@@ -16,7 +16,8 @@ class FriendsScreen extends StatefulWidget {
   State<FriendsScreen> createState() => _FriendsScreenState();
 }
 
-class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProviderStateMixin {
+class _FriendsScreenState extends State<FriendsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController; // Controller untuk TabBar
 
   @override
@@ -36,15 +37,22 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context); // Ambil AuthProvider
-    final friendProvider = Provider.of<FriendProvider>(context); // Ambil FriendProvider
-    final currentUserId = authProvider.user?.uid; // Dapatkan ID pengguna saat ini
+    final authProvider = Provider.of<AuthProvider>(
+      context,
+    ); // Ambil AuthProvider
+    final friendProvider = Provider.of<FriendProvider>(
+      context,
+    ); // Ambil FriendProvider
+    final currentUserId =
+        authProvider.user?.uid; // Dapatkan ID pengguna saat ini
 
     // Jika pengguna tidak login, tampilkan pesan
     if (currentUserId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Friends')),
-        body: const Center(child: Text('Silakan masuk untuk melihat teman Anda.')),
+        body: const Center(
+          child: Text('Silakan masuk untuk melihat teman Anda.'),
+        ),
       );
     }
 
@@ -69,7 +77,10 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                         backgroundColor: Colors.red,
                         child: Text(
                           friendProvider.friendRequests.length.toString(),
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -85,7 +96,9 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddFriendScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const AddFriendScreen(),
+                ),
               );
             },
           ),
@@ -96,31 +109,44 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         children: [
           // Tab "Teman Saya"
           friendProvider.isLoadingFriends
-              ? const Center(child: CircularProgressIndicator()) // Tampilkan indikator loading jika masih memuat
+              ? const Center(
+                child: CircularProgressIndicator(),
+              ) // Tampilkan indikator loading jika masih memuat
               : friendProvider.friends.isEmpty
-                  ? const Center(child: Text('Anda belum punya teman. Tambahkan beberapa!')) // Pesan jika tidak ada teman
-                  : ListView.builder(
-                      itemCount: friendProvider.friends.length,
-                      itemBuilder: (context, index) {
-                        final friend = friendProvider.friends[index]; // Dapatkan objek teman
-                        return Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: NetworkImage(friend.photoUrl ?? 'https://via.placeholder.com/150/0000FF/FFFFFF?text=UL'), // Tampilkan foto profil atau placeholder
-                            ),
-                            title: Text(friend.name), // Tampilkan nama teman
-                            subtitle: Text(friend.email), // Tampilkan email teman
-                            onTap: () {
-                              // TODO: Navigasi ke halaman profil teman
-                              print('Lihat profil ${friend.name}');
-                            },
-                          ),
-                        );
+              ? const Center(
+                child: Text('Anda belum punya teman. Tambahkan beberapa!'),
+              ) // Pesan jika tidak ada teman
+              : ListView.builder(
+                itemCount: friendProvider.friends.length,
+                itemBuilder: (context, index) {
+                  final friend =
+                      friendProvider.friends[index]; // Dapatkan objek teman
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: NetworkImage(
+                          friend.photoUrl ??
+                              'https://via.placeholder.com/150/0000FF/FFFFFF?text=UL',
+                        ), // Tampilkan foto profil atau placeholder
+                      ),
+                      title: Text(friend.name), // Tampilkan nama teman
+                      subtitle: Text(friend.email), // Tampilkan email teman
+                      onTap: () {
+                        // TODO: Navigasi ke halaman profil teman
+                        print('Lihat profil ${friend.name}');
                       },
                     ),
+                  );
+                },
+              ),
           // Tab "Permintaan Diterima"
           const FriendRequestsScreen(), // Tampilkan FriendRequestsScreen di tab kedua
         ],
