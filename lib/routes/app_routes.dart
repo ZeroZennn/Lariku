@@ -10,6 +10,8 @@ import '../screens/run_tracker/run_summary_screen.dart';
 import '../screens/friendship/friends_screen.dart';
 import '../screens/activities/activities_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/profile/edit_profile_screen.dart';
+
 
 final Map<String, WidgetBuilder> appRoutes = {
   SplashScreen.routeName: (context) => const SplashScreen(),
@@ -22,4 +24,5 @@ final Map<String, WidgetBuilder> appRoutes = {
   FriendsScreen.routeName: (context) => const FriendsScreen(),
   ActivitiesScreen.routeName: (context) => const ActivitiesScreen(),
   ProfileScreen.routeName: (context) => ProfileScreen(),
+  EditProfileScreen.routeName: (context) => const EditProfileScreen(),
 };

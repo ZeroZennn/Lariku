@@ -87,7 +87,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 170,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: tambahkan edit profile
+                    Navigator.pushNamed(
+                      context,
+                      '/edit-profile',
+                      arguments: {'name': displayName, 'email': email},
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
