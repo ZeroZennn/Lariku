@@ -85,27 +85,57 @@ class _RunScreenState extends State<RunScreen> {
     _timer?.cancel();
     _positionStream?.cancel();
 
-    if (_startTime == null || _positions.length < 2) return;
+    // Validasi: Apakah run sudah benar-benar dimulai?
+    if (_startTime == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Run belum dimulai.")));
+      return;
+    }
 
-    final activity = RunActivity(
-      date: DateTime.now(),
-      startTime: _startTime!,
-      duration: _seconds,
-      distance: double.parse(_totalDistance.toStringAsFixed(2)),
-      pace: _seconds / _totalDistance,
-      coordinates:
-          _positions
-              .map((e) => {'lat': e.latitude, 'lng': e.longitude})
-              .toList(),
-    );
+    // Validasi: Apakah posisi cukup untuk dihitung?
+    if (_positions.length < 2) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Data posisi tidak cukup.")));
+      return;
+    }
 
-    Navigator.pushReplacementNamed(
-      context,
-      RunSummaryScreen.routeName,
-      arguments: activity,
-    );
+    // Validasi: Jarak harus lebih dari 0 untuk menghindari division by zero
+    if (_totalDistance == 0.0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Jarak tempuh masih nol.")));
+      return;
+    }
 
-    // reset state
+    // Coba navigasi, jika route belum ada, tangkap error-nya
+    try {
+      final activity = RunActivity(
+        date: DateTime.now(),
+        startTime: _startTime!,
+        duration: _seconds,
+        distance: double.parse(_totalDistance.toStringAsFixed(2)),
+        pace: _seconds / _totalDistance,
+        coordinates:
+            _positions
+                .map((e) => {'lat': e.latitude, 'lng': e.longitude})
+                .toList(),
+      );
+
+      Navigator.pushReplacementNamed(
+        context,
+        RunSummaryScreen.routeName,
+        arguments: activity,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Terjadi kesalahan saat menyimpan run: $e")),
+      );
+      return;
+    }
+
+    // Reset state setelah navigasi berhasil
     setState(() {
       _isRunning = false;
       _seconds = 0;
@@ -136,74 +166,137 @@ class _RunScreenState extends State<RunScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // ✅ Latar belakang putih
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            // 🔙 Bagian AppBar custom: tombol kembali
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // 📏 Section Distance
             const Text("Distance (km)", style: TextStyle(fontSize: 16)),
             Text(
               _totalDistance.toStringAsFixed(2),
               style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 16),
-            Expanded(
-              child: GoogleMap(
-                initialCameraPosition: const CameraPosition(
-                  target: LatLng(-6.200000, 106.816666),
-                  zoom: 16,
-                ),
-                polylines: {
-                  Polyline(
-                    polylineId: const PolylineId("run"),
-                    color: Colors.blue,
-                    width: 5,
-                    points: _positions,
+
+            // 🗺️ Section Map dengan margin & rounded corners
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 400,
+                  child: GoogleMap(
+                    initialCameraPosition: const CameraPosition(
+                      target: LatLng(-6.200000, 106.816666),
+                      zoom: 16,
+                    ),
+                    polylines: {
+                      Polyline(
+                        polylineId: const PolylineId("run"),
+                        color: Colors.blue,
+                        width: 5,
+                        points: _positions,
+                      ),
+                    },
+                    myLocationEnabled: true,
+                    onMapCreated: (controller) => _mapController = controller,
                   ),
-                },
-                myLocationEnabled: true,
-                onMapCreated: (controller) => _mapController = controller,
+                ),
               ),
             ),
+
+            const SizedBox(height: 40),
+
+            // ⏱️ Section Time
             const Text("Time", style: TextStyle(fontSize: 16)),
+            const SizedBox(height: 12),
             Text(
               formattedTime,
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
             ),
+
+            const SizedBox(height: 24),
+
+            // 🎮 Section Control Buttons (Stop - Play/Pause - Location)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.stop),
-                    iconSize: 36,
-                    onPressed: _isRunning ? _stopRun : null,
-                  ),
-                  ElevatedButton(
-                    onPressed: _toggleRun,
-                    style: ElevatedButton.styleFrom(
-                      shape: const CircleBorder(),
-                      padding: const EdgeInsets.all(20),
+                  // ⏹️ Tombol STOP dengan outline
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey.shade300, width: 2),
                     ),
-                    child: Icon(
-                      _isRunning ? Icons.pause : Icons.play_arrow,
-                      size: 36,
+                    child: IconButton(
+                      icon: const Icon(Icons.stop),
+                      iconSize: 32,
+                      onPressed: _isRunning ? _stopRun : null,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.location_on),
-                    iconSize: 36,
-                    onPressed: () async {
-                      if (_positions.isNotEmpty) {
-                        await _mapController?.animateCamera(
-                          CameraUpdate.newLatLng(_positions.last),
-                        );
-                      }
-                    },
+
+                  // ⏯️ Tombol Play / Pause dengan warna light blue
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFB3E5FC), // light blue
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        _isRunning ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white,
+                      ),
+                      iconSize: 70,
+                      onPressed: _toggleRun,
+                    ),
+                  ),
+
+                  // 📍 Tombol lokasi (go to current) dengan outline
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey.shade300, width: 2),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.location_on),
+                      iconSize: 32,
+                      onPressed: () async {
+                        if (_positions.isNotEmpty) {
+                          await _mapController?.animateCamera(
+                            CameraUpdate.newLatLng(_positions.last),
+                          );
+                        }
+                      },
+                    ),
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 8),
           ],
         ),
       ),

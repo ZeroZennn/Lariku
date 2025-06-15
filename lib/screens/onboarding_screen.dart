@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/onboarding_page.dart';
+import 'package:animate_do/animate_do.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -44,22 +45,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   currentIndex = index;
                 });
               },
-              itemBuilder:
-                  (context, index) => OnboardingPage(
-                    title: onboardingData[index]['title']!,
-                    description: onboardingData[index]['description']!,
-                    image: onboardingData[index]['image']!,
-                  ),
+              itemBuilder: (context, index) {
+                return OnboardingPage(
+                  title: onboardingData[index]['title']!,
+                  description: onboardingData[index]['description']!,
+                  image: onboardingData[index]['image']!,
+                  isActive: index == currentIndex, // ⬅️ Ini kunci utamanya
+                );
+              },
             ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
               onboardingData.length,
-              (index) => Container(
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 margin: const EdgeInsets.all(4),
-                width: 10,
-                height: 10,
+                width: currentIndex == index ? 12 : 10,
+                height: currentIndex == index ? 12 : 10,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: currentIndex == index ? Colors.blue : Colors.grey,
@@ -74,6 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   // TODO: Navigasi ke halaman login
+                  Navigator.pushReplacementNamed(context, '/login');
                 },
                 child: const Text('Get Started'),
               ),

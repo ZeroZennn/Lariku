@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:lariku/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   static const String routeName = '/login';
@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   Future<void> _signInWithEmail() async {
@@ -36,26 +37,19 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      await _auth.signInWithCredential(credential);
+      await _authService.signInWithGoogle();
       Navigator.pushReplacementNamed(context, '/home');
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Google sign-in failed')),
-      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  // 🔧 Custom TextField dengan shadow
   Widget _inputField({
     required TextEditingController controller,
     required String hintText,
@@ -99,7 +93,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 🔠 Judul Aplikasi
                   const Text(
                     'LARIKU',
                     style: TextStyle(
@@ -110,8 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // 📝 Subjudul Selamat Datang
                   const Text(
                     'Selamat Datang Kembali!',
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.w500),
@@ -119,7 +110,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 50),
 
-                  // 🧾 Input Fields
                   _inputField(
                     controller: _emailController,
                     hintText: 'Email',
@@ -133,7 +123,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 50),
 
-                  // 🔵 Tombol Masuk
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -154,8 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // 🔁 Divider "OR"
                   Row(
                     children: const [
                       Expanded(child: Divider()),
@@ -168,7 +155,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 🔐 Tombol Sign in with Google
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -193,7 +179,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 🔗 Teks navigasi ke Buat Akun
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
