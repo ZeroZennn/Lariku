@@ -47,8 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.only(
                 left: 24,
                 right: 24,
-                top: 38,
-                bottom: 14,
+                top: 90,
+                bottom: 40,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -62,17 +62,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   photoURL != null && photoURL.isNotEmpty
-                      ? CircleAvatar(
-                        backgroundImage: NetworkImage(photoURL),
-                        radius: 26,
+                      ? GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/profile',
+                          ); // Arahkan ke profile
+                        },
+                        child: CircleAvatar(
+                          backgroundImage: NetworkImage(photoURL),
+                          radius: 26,
+                        ),
                       )
-                      : CircleAvatar(
-                        backgroundColor: const Color(0xFFD7D7D7),
-                        radius: 26,
-                        child: const Icon(
-                          Icons.person,
-                          size: 30,
-                          color: Colors.grey,
+                      : GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/profile');
+                        },
+                        child: CircleAvatar(
+                          backgroundColor: const Color(0xFFD7D7D7),
+                          radius: 26,
+                          child: const Icon(
+                            Icons.person,
+                            size: 30,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                 ],
@@ -87,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // 3. Tombol Mulai Lari (tidak perlu diubah)
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.only(left: 24, top: 36, bottom: 28),
+          padding: const EdgeInsets.only(left: 24, top: 36, bottom: 60),
           alignment: Alignment.centerLeft,
           child: ElevatedButton(
             onPressed: () {
@@ -98,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: ElevatedButton.styleFrom(
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 13),
-              backgroundColor: const Color(0xFFD7D7D7),
+              backgroundColor: const Color(0xFFFFA4D6), // Pink
               foregroundColor: Colors.black87,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28),
@@ -109,10 +122,14 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   "Mulai Lari",
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 SizedBox(width: 12),
-                Icon(Icons.arrow_forward, size: 22),
+                Icon(Icons.arrow_forward, size: 22, color: Colors.white),
               ],
             ),
           ),
@@ -132,13 +149,13 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             }
             return Container(
-              color: const Color(0xFF686868),
+              color: Colors.lightBlue.shade200,
               width: double.infinity,
               padding: const EdgeInsets.only(
                 left: 24,
                 right: 24,
-                top: 14,
-                bottom: 20,
+                top: 60,
+                bottom: 60,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
-                          backgroundColor: const Color(0xFFD7D7D7),
+                          backgroundColor: const Color(0xFFFFA4D6),
                           foregroundColor: Colors.black87,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 22,
@@ -204,7 +221,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        child: const Text("Set Goal"),
+                        child: const Text(
+                          "Set Goal",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -235,47 +259,103 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              Navigator.pushNamed(context, '/profile');
-            },
-          ),
-        ],
-      ),
+      extendBody: true,
+      backgroundColor: Colors.white, // Background putih
       body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
+      // BOTTOM NAVIGATION CUSTOM
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(
+          bottom: 20, // Jarak dari bawah layar
+          left: 16, // Jarak dari sisi kiri
+          right: 16, // Jarak dari sisi kanan
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 24,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard_outlined),
-            label: 'Ranking',
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(_titles.length, (index) {
+                  if (index == 2) {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/run',
+                        ); // Arahkan ke profile
+                      },
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: Color(0xFFFFA4D6), // Pink
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.pink.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                      ),
+                    );
+                  } else {
+                    final icons = [
+                      Icons.home_outlined,
+                      Icons.leaderboard_outlined,
+                      null,
+                      Icons.people_outline,
+                      Icons.history,
+                    ];
+                    return GestureDetector(
+                      onTap: () => setState(() => _currentIndex = index),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            icons[index]!,
+                            color:
+                                _currentIndex == index
+                                    ? Colors.black
+                                    : Colors.grey,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _titles[index],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  _currentIndex == index
+                                      ? Colors.black
+                                      : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }),
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.play_circle_outline),
-            label: 'Run',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
-            label: 'Friends',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'Activities',
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -349,7 +429,7 @@ class _PersonalBestCardState extends State<PersonalBestCard> {
           }
         }
         return Container(
-          color: const Color(0xFF686868),
+          color: Colors.lightBlue.shade200,
           width: double.infinity,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,8 +438,8 @@ class _PersonalBestCardState extends State<PersonalBestCard> {
                 padding: const EdgeInsets.only(
                   left: 24,
                   right: 24,
-                  top: 18,
-                  bottom: 10,
+                  top: 32,
+                  bottom: 32,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

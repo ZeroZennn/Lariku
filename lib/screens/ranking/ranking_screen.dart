@@ -57,18 +57,20 @@ class _RankingScreenState extends State<RankingScreen> {
     List<_FriendRanking> rankings = [];
     for (final friendId in friendIds) {
       // Ambil data profil user/teman
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(friendId)
-          .get();
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(friendId)
+              .get();
       final userData = userDoc.data() ?? {};
 
       // Ambil semua aktivitas lari (runs)
-      final runsSnap = await FirebaseFirestore.instance
-          .collection('activities')
-          .doc(friendId)
-          .collection('runs')
-          .get();
+      final runsSnap =
+          await FirebaseFirestore.instance
+              .collection('activities')
+              .doc(friendId)
+              .collection('runs')
+              .get();
 
       // Hitung total distance
       double totalDistance = 0.0;
@@ -80,7 +82,8 @@ class _RankingScreenState extends State<RankingScreen> {
         _FriendRanking(
           userId: friendId,
           name: userData['displayName'] ?? userData['email'] ?? '-',
-          image: userData['photoURL'] ??
+          image:
+              userData['photoURL'] ??
               'https://ui-avatars.com/api/?name=${userData['displayName'] ?? userData['email'] ?? 'U'}',
           totalDistance: totalDistance,
         ),
@@ -172,9 +175,10 @@ class _MvpSection extends StatelessWidget {
           image: mvp[i].image,
           name: mvp[i].name,
           rank: i + 1,
-          highlight: i == 0
-              ? Colors.blue
-              : (i == 1 ? Colors.orange : Colors.lightBlue),
+          highlight:
+              i == 0
+                  ? Colors.blue
+                  : (i == 1 ? Colors.orange : Colors.lightBlue),
           size: i == 0 ? 100 : 80,
           nameFontSize: i == 0 ? 20 : 18,
           totalDistance: mvp[i].totalDistance,
