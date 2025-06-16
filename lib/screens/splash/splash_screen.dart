@@ -18,17 +18,15 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), _checkAuthStatus);
+    Timer(const Duration(seconds: 4), _checkAuthStatus);
   }
 
   void _checkAuthStatus() {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      // Jika user masih login, arahkan ke Home
       Navigator.pushReplacementNamed(context, HomeScreen.routeName);
     } else {
-      // Jika belum login, arahkan ke onboarding
       Navigator.pushReplacementNamed(context, OnboardingScreen.routeName);
     }
   }
@@ -36,11 +34,32 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // Warna latar belakang putih
       body: Center(
-        child: Lottie.asset(
-          'assets/lottie/wind.json', // pastikan path benar
-          width: 1000,
-          height: 1000,
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // konten tetap di tengah
+          children: [
+            // Animasi Lottie kecil
+            Lottie.asset(
+              'assets/lottie/wind.json',
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+
+            const SizedBox(height: 20),
+
+            // Teks LARIKU
+            const Text(
+              'LARIKU',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: Color(0xFF333333),
+              ),
+            ),
+          ],
         ),
       ),
     );

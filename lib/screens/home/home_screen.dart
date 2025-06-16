@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> get _pages => [
     // --- INI HALAMAN HOME BARU SESUAI DESAIN GAMBAR ---
     ListView(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.only(bottom: 100),
       children: [
         // 1. Salam & Foto Profil DINAMIS
         FutureBuilder<DocumentSnapshot>(
@@ -148,30 +148,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 totalDistance += (run['distance'] as num?)?.toDouble() ?? 0.0;
               }
             }
-            return Container(
-              color: Colors.lightBlue.shade200,
-              width: double.infinity,
-              padding: const EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 60,
-                bottom: 60,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Suggested Goal",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                    ),
+            return Stack(
+              children: [
+                // Konten utama container
+                Container(
+                  color: Colors.lightBlue.shade200,
+                  width: double.infinity,
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 60,
+                    bottom: 60,
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text(
+                        "Suggested Goal",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           const Icon(
@@ -204,36 +204,57 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: const Color(0xFFFFA4D6),
-                          foregroundColor: Colors.black87,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        child: const Text(
-                          "Set Goal",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                // Badge di pojok kanan atas (floating)
+                Positioned(
+                  top: 22, // Atur sesuai padding container
+                  right: 28, // Atur sesuai padding container
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          totalDistance >= goalDistance
+                              ? const Color(0xFF44C285)
+                              : const Color(0xFFFFA4D6),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          totalDistance >= goalDistance
+                              ? Icons.verified
+                              : Icons.timelapse,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          totalDistance >= goalDistance
+                              ? "Achieved"
+                              : "Not Achieved",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -614,11 +635,24 @@ class _PersonalBestCardState extends State<PersonalBestCard> {
 Future<QuerySnapshot?> _fetchWeeklyRuns() {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return Future.value(null);
+
   final uid = user.uid;
-  final now = DateTime.now();
+  final now = DateTime.now().toUtc();
+
+  // Ambil hari Senin minggu ini (mulai jam 00:00 UTC)
   final monday = now.subtract(Duration(days: now.weekday - 1));
-  final weekStart = DateTime(monday.year, monday.month, monday.day);
+  final weekStart = DateTime.utc(
+    monday.year,
+    monday.month,
+    monday.day,
+    0,
+    0,
+    0,
+  );
+
+  // Minggu depan, Senin jam 00:00 UTC (tidak termasuk hari itu)
   final weekEnd = weekStart.add(const Duration(days: 7));
+
   return FirebaseFirestore.instance
       .collection('activities')
       .doc(uid)

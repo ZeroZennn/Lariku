@@ -1,4 +1,3 @@
-// lib/screens/friendship/add_friend_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/friend_provider.dart';
@@ -14,7 +13,8 @@ class AddFriendScreen extends StatefulWidget {
 }
 
 class _AddFriendScreenState extends State<AddFriendScreen> {
-  final TextEditingController _searchController = TextEditingController(); // Pastikan controller di sini
+  final TextEditingController _searchController = TextEditingController();
+  final Color primaryColor = const Color(0xFFFFA4D6); // Warna pink pastel
 
   @override
   void dispose() {
@@ -27,8 +27,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     return Consumer<FriendProvider>(
       builder: (context, friendProvider, child) {
         return Scaffold(
+          backgroundColor: Colors.white,
           appBar: AppBar(
-            title: const Text('Add User'),
+            title: const Text('Tambah Teman'),
             elevation: 0,
             backgroundColor: Colors.white,
             titleTextStyle: const TextStyle(
@@ -41,26 +42,32 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           body: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: TextField(
-                  controller: _searchController, // Menggunakan controller lokal
+                  controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search friends by name or email...',
+                    hintText: 'Cari teman berdasarkan nama atau email...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
                     fillColor: Colors.grey[200],
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12.0,
+                      horizontal: 20.0,
+                    ),
                   ),
                   onChanged: (query) {
                     if (query.length > 2) {
                       friendProvider.searchUsers(query);
                     } else if (query.isEmpty) {
                       friendProvider.searchResults.clear();
-                      friendProvider.searchUsers(''); // Clear search results if query is empty
+                      friendProvider.searchUsers('');
                     }
                   },
                   onSubmitted: (query) {
@@ -71,55 +78,101 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 ),
               ),
               Expanded(
-                child: friendProvider.isLoadingSearchResults
-                    ? const Center(child: CircularProgressIndicator())
-                    : friendProvider.searchResults.isEmpty && _searchController.text.isNotEmpty
-                        ? const Center(child: Text('No users found.'))
-                        : friendProvider.searchResults.isEmpty && _searchController.text.isEmpty
-                            ? const Center(child: Text('Start typing to search for users.'))
-                            : ListView.builder(
-                                itemCount: friendProvider.searchResults.length,
-                                itemBuilder: (context, index) {
-                                  final user = friendProvider.searchResults[index];
-                                  return Card(
-                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        radius: 24,
-                                        backgroundImage: NetworkImage(user.photoUrl ?? 'https://placehold.co/150x150/F0F0F0/000000?text=${user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U'}'),
-                                      ),
-                                      title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-                                      subtitle: Text(user.email),
-                                      trailing: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                          minimumSize: const Size(100, 36),
-                                        ),
-                                        onPressed: () async {
-                                          bool success = await friendProvider.sendFriendRequest(user.uid);
-                                          if (success) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Friend request sent to ${user.name}!')),
-                                            );
-                                            // Clear search text and results after success
-                                            _searchController.clear(); // Bersihkan controller
-                                            friendProvider.searchUsers(''); // Kosongkan hasil pencarian
-                                          } else {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Failed to send friend request.')),
-                                            );
-                                          }
-                                        },
-                                        child: const Text('Add Friend', style: TextStyle(color: Colors.white)),
-                                      ),
-                                    ),
-                                  );
-                                },
+                child:
+                    friendProvider.isLoadingSearchResults
+                        ? const Center(child: CircularProgressIndicator())
+                        : friendProvider.searchResults.isEmpty &&
+                            _searchController.text.isNotEmpty
+                        ? const Center(child: Text('Pengguna tidak ditemukan.'))
+                        : friendProvider.searchResults.isEmpty
+                        ? const Center(
+                          child: Text('Mulai ketik untuk mencari teman.'),
+                        )
+                        : ListView.builder(
+                          itemCount: friendProvider.searchResults.length,
+                          itemBuilder: (context, index) {
+                            final user = friendProvider.searchResults[index];
+                            final fallbackImage =
+                                'https://placehold.co/150x150/F0F0F0/000000?text=${user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U'}';
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 16,
+                                ),
+                                leading: CircleAvatar(
+                                  radius: 28,
+                                  backgroundImage: NetworkImage(
+                                    user.photoUrl ?? fallbackImage,
+                                  ),
+                                ),
+                                title: Text(
+                                  user.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  user.email,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                trailing: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    bool success = await friendProvider
+                                        .sendFriendRequest(user.uid);
+                                    if (success) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Permintaan dikirim ke ${user.name}!',
+                                          ),
+                                        ),
+                                      );
+                                      _searchController.clear();
+                                      friendProvider.searchUsers('');
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Gagal mengirim permintaan.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: const Text(
+                                    'Tambah',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
               ),
             ],
           ),
