@@ -69,7 +69,7 @@ class _FriendsScreenState extends State<FriendsScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Diterima'),
+                  const Text('Permintaan'),
                   if (friendProvider.friendRequests.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(left: 6.0),

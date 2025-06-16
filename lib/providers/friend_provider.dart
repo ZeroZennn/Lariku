@@ -11,21 +11,28 @@ class FriendProvider with ChangeNotifier {
   final AuthProvider _authProvider;
 
   List<UserModel> _friends = [];
-  List<Map<String, dynamic>> _friendRequests = [];
+  List<Map<String, dynamic>> _friendRequests = []; // Permintaan diterima (status pending)
+  List<Map<String, dynamic>> _sentRequests = []; // Permintaan dikirim (status pending)
   List<UserModel> _searchResults = [];
+
   bool _isLoadingFriends = false;
-  bool _isLoadingRequests = false;
+  bool _isLoadingRequests = false; // Loading untuk permintaan diterima
+  bool _isLoadingSentRequests = false; // Loading untuk permintaan dikirim
   bool _isLoadingSearchResults = false;
 
   // StreamSubscriptions untuk mengelola listener Firestore
   StreamSubscription? _friendsSubscription;
   StreamSubscription? _friendRequestsSubscription;
+  StreamSubscription? _sentRequestsSubscription;
 
   List<UserModel> get friends => _friends;
   List<Map<String, dynamic>> get friendRequests => _friendRequests;
+  List<Map<String, dynamic>> get sentRequests => _sentRequests; // Getter untuk permintaan dikirim
   List<UserModel> get searchResults => _searchResults;
+
   bool get isLoadingFriends => _isLoadingFriends;
   bool get isLoadingRequests => _isLoadingRequests;
+  bool get isLoadingSentRequests => _isLoadingSentRequests; // Getter untuk loading permintaan dikirim
   bool get isLoadingSearchResults => _isLoadingSearchResults;
 
   // Konstruktor FriendProvider
@@ -41,13 +48,15 @@ class FriendProvider with ChangeNotifier {
       // Jika pengguna masuk, inisialisasi listener
       _listenToFriends(_authProvider.user!.uid);
       _listenToFriendRequests(_authProvider.user!.uid);
+      _listenToSentFriendRequests(_authProvider.user!.uid); // Inisialisasi listener untuk permintaan dikirim
     } else {
       // Jika pengguna keluar, batalkan semua subscription dan kosongkan daftar
       _cancelSubscriptions();
       _friends = [];
       _friendRequests = [];
+      _sentRequests = []; // Kosongkan daftar permintaan dikirim
       _searchResults = [];
-      if (!isDisposed) { // Tambahkan cek ini
+      if (!isDisposed) {
         notifyListeners();
       }
     }
@@ -57,19 +66,20 @@ class FriendProvider with ChangeNotifier {
   void _cancelSubscriptions() {
     _friendsSubscription?.cancel();
     _friendRequestsSubscription?.cancel();
+    _sentRequestsSubscription?.cancel(); // Batalkan subscription untuk permintaan dikirim
     _friendsSubscription = null;
     _friendRequestsSubscription = null;
+    _sentRequestsSubscription = null; // Set null
     print('All Firestore subscriptions cancelled.');
   }
 
   void _listenToFriends(String userId) {
     _isLoadingFriends = true;
-    if (!isDisposed) { // Tambahkan cek ini
+    if (!isDisposed) {
       notifyListeners();
     }
 
-    // Batalkan subscription sebelumnya jika ada
-    _friendsSubscription?.cancel();
+    _friendsSubscription?.cancel(); // Batalkan subscription sebelumnya jika ada
 
     _friendsSubscription = _firestoreService.getFriends(userId).listen((snapshot) async {
       print('Friend snapshot received for $userId. Docs count: ${snapshot.docs.length}');
@@ -85,7 +95,6 @@ class FriendProvider with ChangeNotifier {
       }
       _friends = fetchedFriends;
       _isLoadingFriends = false;
-      // Pastikan provider belum dibuang sebelum memanggil notifyListeners
       if (!isDisposed) {
         notifyListeners();
         print('Friends list updated. Total friends: ${_friends.length}');
@@ -101,19 +110,18 @@ class FriendProvider with ChangeNotifier {
 
   void _listenToFriendRequests(String userId) {
     _isLoadingRequests = true;
-    if (!isDisposed) { // Tambahkan cek ini
+    if (!isDisposed) {
       notifyListeners();
     }
 
-    print('Attempting to listen to pending friend requests for userId: $userId');
-    // Batalkan subscription sebelumnya jika ada
-    _friendRequestsSubscription?.cancel();
+    print('Attempting to listen to pending received friend requests for userId: $userId');
+    _friendRequestsSubscription?.cancel(); // Batalkan subscription sebelumnya jika ada
 
     _friendRequestsSubscription = _firestoreService.getFriendRequestsToUser(userId).listen((snapshot) async {
-      print('Pending friend requests snapshot received for $userId. Docs count: ${snapshot.docs.length}');
+      print('Pending received friend requests snapshot received for $userId. Docs count: ${snapshot.docs.length}');
       List<Map<String, dynamic>> fetchedRequests = [];
       for (var doc in snapshot.docs) {
-        print('Processing request ID: ${doc.id}, fromUserId: ${doc['fromUserId']}');
+        print('Processing received request ID: ${doc.id}, fromUserId: ${doc['fromUserId']}');
         if (doc.data() is Map<String, dynamic> && doc['fromUserId'] != null) {
           UserModel? fromUser = await _firestoreService.getUserById(doc['fromUserId']);
           if (fromUser != null) {
@@ -121,24 +129,68 @@ class FriendProvider with ChangeNotifier {
               'requestId': doc.id,
               'fromUser': fromUser,
             });
-            print('Added pending request from: ${fromUser.name} (ID: ${fromUser.uid})');
+            print('Added pending received request from: ${fromUser.name} (ID: ${fromUser.uid})');
           } else {
             print('WARNING: Could not find UserModel for fromUserId: ${doc['fromUserId']}. Ensure user exists and Firestore rules allow access to /users/{userId}.');
           }
         } else {
-          print('WARNING: Request document ${doc.id} missing fromUserId or data is not map.');
+          print('WARNING: Received request document ${doc.id} missing fromUserId or data is not map.');
         }
       }
       _friendRequests = fetchedRequests;
       _isLoadingRequests = false;
-      // Pastikan provider belum dibuang sebelum memanggil notifyListeners
       if (!isDisposed) {
         notifyListeners();
-        print('Pending friend requests list updated. Total requests: ${_friendRequests.length}');
+        print('Pending received friend requests list updated. Total requests: ${_friendRequests.length}');
       }
     }, onError: (error) {
-      print('ERROR listening to pending friend requests: $error');
+      print('ERROR listening to pending received friend requests: $error');
       _isLoadingRequests = false;
+      if (!isDisposed) {
+        notifyListeners();
+      }
+    });
+  }
+
+  // Metode untuk mendengarkan permintaan pertemanan yang dikirim (pending)
+  void _listenToSentFriendRequests(String userId) {
+    _isLoadingSentRequests = true;
+    if (!isDisposed) {
+      notifyListeners();
+    }
+
+    print('Attempting to listen to pending sent friend requests from userId: $userId');
+    _sentRequestsSubscription?.cancel(); // Batalkan subscription sebelumnya jika ada
+
+    _sentRequestsSubscription = _firestoreService.getSentFriendRequests(userId).listen((snapshot) async {
+      print('Pending sent friend requests snapshot received from $userId. Docs count: ${snapshot.docs.length}');
+      List<Map<String, dynamic>> fetchedSentRequests = [];
+      for (var doc in snapshot.docs) {
+        print('Processing sent request ID: ${doc.id}, toUserId: ${doc['toUserId']}');
+        if (doc.data() is Map<String, dynamic> && doc['toUserId'] != null) {
+          UserModel? toUser = await _firestoreService.getUserById(doc['toUserId']);
+          if (toUser != null) {
+            fetchedSentRequests.add({
+              'requestId': doc.id,
+              'toUser': toUser, // Menyimpan detail penerima
+            });
+            print('Added pending sent request to: ${toUser.name} (ID: ${toUser.uid})');
+          } else {
+            print('WARNING: Could not find UserModel for toUserId: ${doc['toUserId']}. Ensure user exists and Firestore rules allow access to /users/{userId}.');
+          }
+        } else {
+          print('WARNING: Sent request document ${doc.id} missing toUserId or data is not map.');
+        }
+      }
+      _sentRequests = fetchedSentRequests;
+      _isLoadingSentRequests = false;
+      if (!isDisposed) {
+        notifyListeners();
+        print('Pending sent friend requests list updated. Total sent requests: ${_sentRequests.length}');
+      }
+    }, onError: (error) {
+      print('ERROR listening to pending sent friend requests: $error');
+      _isLoadingSentRequests = false;
       if (!isDisposed) {
         notifyListeners();
       }
@@ -147,7 +199,7 @@ class FriendProvider with ChangeNotifier {
 
   Future<void> searchUsers(String query) async {
     _isLoadingSearchResults = true;
-    if (!isDisposed) { // Tambahkan cek ini
+    if (!isDisposed) {
       notifyListeners();
     }
     _searchResults = [];
@@ -157,7 +209,7 @@ class FriendProvider with ChangeNotifier {
       if (currentUserId == null) {
         print('User not logged in. Cannot search for users.');
         _isLoadingSearchResults = false;
-        if (!isDisposed) { // Tambahkan cek ini
+        if (!isDisposed) {
           notifyListeners();
         }
         return;
@@ -186,7 +238,7 @@ class FriendProvider with ChangeNotifier {
       print('ERROR searching users: $e');
     } finally {
       _isLoadingSearchResults = false;
-      if (!isDisposed) { // Tambahkan cek ini
+      if (!isDisposed) {
         notifyListeners();
       }
     }
@@ -202,11 +254,8 @@ class FriendProvider with ChangeNotifier {
     try {
       await _firestoreService.sendFriendRequest(currentUserId, toUserId);
       print('Friend request sent successfully.');
-      // Setelah mengirim permintaan, Anda mungkin ingin memperbarui hasil pencarian
-      // Panggil searchUsers lagi dengan query yang sama jika Anda ingin me-refresh UI AddFriendScreen
-      // atau kosongkan searchResults jika ingin menghapus user yang baru saja dikirimi request.
-      // Di sini kita tidak lagi bergantung pada _searchController, melainkan pada logika AddFriendScreen
-      // untuk memanggil searchUsers() lagi atau membersihkan UI-nya.
+      // Tidak perlu memanggil searchUsers('') di sini karena listener _listenToSentFriendRequests
+      // akan secara otomatis memperbarui daftar sentRequests.
       return true;
     } catch (e) {
       print('ERROR sending friend request: $e');
@@ -243,7 +292,19 @@ class FriendProvider with ChangeNotifier {
     }
   }
 
-  // Flag untuk melacak apakah provider sudah dibuang
+  // Metode untuk membatalkan permintaan yang telah dikirim
+  Future<bool> cancelSentFriendRequest(String requestId) async {
+    print('Cancelling sent request ID: $requestId');
+    try {
+      await _firestoreService.cancelSentFriendRequest(requestId);
+      print('Sent friend request cancelled successfully.');
+      return true;
+    } catch (e) {
+      print('ERROR cancelling sent friend request: $e');
+      return false;
+    }
+  }
+
   bool _isDisposed = false;
   bool get isDisposed => _isDisposed;
 

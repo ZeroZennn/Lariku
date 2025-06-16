@@ -84,6 +84,17 @@ class FirestoreService {
     print('FirestoreService: Request status updated to rejected.');
   }
 
+  // Membatalkan permintaan pertemanan yang telah dikirim
+  // Mengubah status permintaan menjadi 'cancelled'
+  Future<void> cancelSentFriendRequest(String requestId) async {
+    print('FirestoreService: Cancelling sent request ID $requestId');
+    await _firestore.collection('friend_requests').doc(requestId).update({
+      'status': 'cancelled',
+      'cancelledAt': FieldValue.serverTimestamp(),
+    });
+    print('FirestoreService: Sent request status updated to cancelled.');
+  }
+
   // Mendapatkan stream permintaan pertemanan yang diterima oleh pengguna saat ini
   // Hanya ambil permintaan yang statusnya 'pending'
   Stream<QuerySnapshot> getFriendRequestsToUser(String userId) {
@@ -91,6 +102,17 @@ class FirestoreService {
     return _firestore
         .collection('friend_requests')
         .where('toUserId', isEqualTo: userId)
+        .where('status', isEqualTo: 'pending') // Filter hanya yang berstatus 'pending'
+        .snapshots();
+  }
+
+  // Mendapatkan stream permintaan pertemanan yang dikirim oleh pengguna saat ini
+  // Hanya ambil permintaan yang statusnya 'pending'
+  Stream<QuerySnapshot> getSentFriendRequests(String userId) {
+    print('FirestoreService: Listening for pending sent requests from $userId');
+    return _firestore
+        .collection('friend_requests')
+        .where('fromUserId', isEqualTo: userId)
         .where('status', isEqualTo: 'pending') // Filter hanya yang berstatus 'pending'
         .snapshots();
   }
@@ -131,6 +153,17 @@ class FirestoreService {
       for (var doc in nameSnapshot.docs) {
         users.add(UserModel.fromFirestore(doc));
       }
+      // Opsi: Jika ingin juga mencari email bahkan jika tidak ada '@', bisa tambahkan:
+      // QuerySnapshot emailAsNameSearch = await _firestore
+      //    .collection('users')
+      //    .where('email', isGreaterThanOrEqualTo: query)
+      //    .where('email', isLessThanOrEqualTo: query + '\uf8ff')
+      //    .get();
+      // for (var doc in emailAsNameSearch.docs) {
+      //   if (!users.any((user) => user.uid == doc.id)) {
+      //     users.add(UserModel.fromFirestore(doc));
+      //   }
+      // }
     }
     
     print('FirestoreService: Search found ${users.length} users.');
@@ -169,7 +202,6 @@ class FirestoreService {
   }
 
   // Mengambil detail pengguna berdasarkan ID dari Firestore
-  // Implementasi metode getUserById yang sebelumnya kosong
   Future<UserModel?> getUserById(String uid) async {
     try {
       DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
